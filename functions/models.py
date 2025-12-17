@@ -18,14 +18,14 @@ def mlp(in_dim, hid, out_dim, p=0.1):
 
 @torch.no_grad()
 def _chol_from_semantics(S_sem: torch.Tensor, alpha: float, lam: float, jitter: float) -> torch.Tensor:
-    S = F.normalize(S_sem, dim=1)                       # [F, d] 单位化
-    K = S @ S.T                                         # [F, F] 余弦 Gram，PSD
+    S = F.normalize(S_sem, dim=1)
+    K = S @ S.T
     Fnum = K.shape[0]
     Sigma = alpha * K + lam * torch.eye(Fnum, device=K.device, dtype=K.dtype)
-    Sigma = 0.5 * (Sigma + Sigma.T)                     # 数值对称
+    Sigma = 0.5 * (Sigma + Sigma.T)
     diag_mean = torch.mean(torch.diag(Sigma))
     Sigma = Sigma + (jitter * diag_mean + 1e-8) * torch.eye(Fnum, device=K.device, dtype=K.dtype)
-    scale_tril = torch.linalg.cholesky(Sigma)           # [F, F]
+    scale_tril = torch.linalg.cholesky(Sigma)       
     return scale_tril
 
 class OrthoFusion(nn.Module):

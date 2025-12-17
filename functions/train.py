@@ -1,4 +1,3 @@
-# train.py (end-to-end, simplified)
 import os, argparse, math
 import numpy as np
 import torch
@@ -69,21 +68,14 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
     set_seed(args.seed)
     device = args.device
-
-    # -------- Load arrays --------
     X_prs, X_ehr, y, X_cov = load_arrays(args.prs, args.ehr, args.y, args.covariates)
     S_sem = load_semantic_embeddings(args.sem)
     semantic = pd.read_csv(args.semantic)
-
-    # -------- Load EID (sample IDs) --------
-    # 支持 .npy 或 文本（每行一个 ID）
     if args.EID.endswith(".npy"):
         sample_ids = np.load(args.EID)
     else:
         sample_ids = np.loadtxt(args.EID, dtype=str)
     sample_ids = np.asarray(sample_ids).reshape(-1)
-
-    # -------- 过滤 EHR 特征（按 prevalence）--------
     idx = (np.sum(X_ehr, axis=0) / X_ehr.shape[0] >= 0.01)
     X_ehr = X_ehr[:, idx]
     S_sem = S_sem[idx, :]
@@ -282,7 +274,6 @@ def main():
             mask_est = out["mask"].mean(dim=0).detach().cpu().numpy()
             np.save(os.path.join(args.out_dir, f"fold{fold}_mask.npy"), mask_est)
 
-        # 当前 fold 的验证样本 ID（按原始索引 va）
         ids_fold = sample_ids[va]
 
         torch.save(best_state, os.path.join(args.out_dir, f"fold{fold}_model.pt"))

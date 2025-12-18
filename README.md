@@ -15,7 +15,7 @@ This repository contains R scripts for data preparation and Python scripts for s
    Python code for semantic vectors, datasets, model, loss, metrics, and model fit
 
 3. `reference`  
-   Phecode mapping tables
+   Phecode mapping tables and phenotype exclusion tables
 
 ## Installation
 
@@ -68,8 +68,7 @@ All sample level arrays must share the same sample order.
 ### Optional files
 Covariate matrix `X_cov` with shape `[N, cov_dim]`
 ### Clean UKB data
-
-We provide the complete R scripts and reference files used to clean the UKB data for each target phenotype. The scripts are in the `data_prepare` folder, and the reference files are in the `reference` folder.
+We provide the complete R scripts and reference files used to clean the UKB data and prepare the input data for each target phenotype, including PRS computation. The scripts are in the `data_prepare` folder, and the reference files are in the `reference` folder.
 
 
 

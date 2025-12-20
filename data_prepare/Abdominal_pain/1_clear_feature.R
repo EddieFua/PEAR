@@ -41,7 +41,6 @@ map[, phe       := trimws(phe)]
 map <- map[nchar(code_clean) > 0 & phe != "" & !is.na(phe)]
 map[, len := nchar(code_clean)]
 
-# ----------------------------- ICD10 -> Phecode 映射 -----------------------------
 uniq_icd <- unique(long[, .(icd_clean)])
 lens     <- sort(unique(map$len))
 code2phe_list <- vector("list", length(lens))

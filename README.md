@@ -2,20 +2,15 @@
 
 PEAR is an interpretable deep learning method for PRS- and EHR-augmented risk prediction.
 
-This repository contains R scripts for data preparation and Python scripts for semantic vectors, model fit, evaluation, and EHR feature gate export.
+This repository contains R scripts for data preparation and Python code for semantic vectors, model fitting, evaluation, and EHR feature gate export.
 
-![Pipeline](figure/pipeline.jpg)
+![PEAR workflow](figure/pipeline.jpg)
 
 ## Repository structure
 
-1. `data_prepare`  
-   R scripts for phenotype specific data preparation and PRS calculation
-
-2. `functions`  
-   Python code for semantic vectors, datasets, model, loss, metrics, and model fit
-
-3. `reference`  
-   Phecode mapping tables and phenotype exclusion tables
+1. `data_prepare/`: R scripts for phenotype-specific data preparation and PRS calculation.
+2. `functions/`: Python code for semantic vectors, datasets, models, losses, training, and prediction.
+3. `reference/`: Phecode definitions and reference table instructions.
 
 ## Installation
 
@@ -28,70 +23,66 @@ cd PEAR
 
 ### Install Python packages
 
+Use Python 3.10 or newer.
+
 ```bash
-pip install numpy pandas scikit-learn scipy tqdm transformers pyliftover
+pip install -r requirements.txt 'transformers>=4.40,<5'
 ```
-PyTorch install depends on your CUDA or CPU setup.
+
+Choose a PyTorch build that matches your CPU or CUDA setup.
 
 ### Install R packages
 
 ```r
 install.packages(c(
-  "data.table",
-  "stringr",
-  "dplyr",
-  "tidyr",
-  "glue",
-  "RcppCNPy"
-if (!requireNamespace("BiocManager", quietly = TRUE)) {
-  install.packages("BiocManager")
-}
-BiocManager::install(c(
-  "bigsnpr",
-  "bigstatsr",
-  "bigreadr"
+  "data.table", "bigreadr", "bigsnpr", "bigstatsr", "RcppCNPy", "tidyr"
 ))
 ```
 
-
 ## Files prepared for PEAR
-All sample level arrays must share the same sample order.
+
+All sample-level arrays must share the same sample order. Save numeric arrays as `.npy` files or `.npz` files with an array named `arr_0`.
+
 ### Required files
-1. PRS matrix `X_prs` with shape `[N, d_prs]`
-2. EHR matrix `X_ehr` with shape `[N, d_ehr]`
-3. Label vector `y` with shape `[N]` with values `0` or `1`
-4. Sample id file `EID` with length `N`  
-   It can be a text file with one id per line or a `.npy` file
-5. Semantic vector matrix `S_sem` with shape `[d_ehr, d_sem]`
-6. Semantic feature table `semantic.csv` with `d_ehr` rows  
-   Each row maps to one EHR feature in `X_ehr` and one row in `S_sem`
+
+1. PRS matrix `X_prs`: shape `[N, d_prs]`, before scaling.
+2. Binary EHR matrix `X_ehr`: shape `[N, d_ehr]`.
+3. Label vector `y`: shape `[N]`, with values `0` or `1`.
+4. Sample IDs `EID`: length `N`, as a text file with one ID per line or a `.npy` file.
+5. Semantic vectors `S_sem`: shape `[d_ehr, d_sem]`, with rows in EHR feature order.
+
 ### Optional files
-Covariate matrix `X_cov` with shape `[N, cov_dim]`
+
+- Covariate matrix `X_cov`: shape `[N, cov_dim]`.
+- `semantic.csv`: columns `feature,text`, with one row per EHR feature. Use this table to generate semantic vectors and retain feature names in the outputs.
+
 ### Clean UKB data
-We provide the complete R scripts and reference files used to clean the UKB data and prepare the input data for each target phenotype, including PRS computation. The scripts are in the `data_prepare` folder, and the reference files are in the `reference` folder.
 
+The scripts in `data_prepare/` prepare UK Biobank inputs for each target phenotype, including PRS calculation. Set the input paths, then run `1_clear_feature.R` followed by `2_compute_prs.R`.
 
+Phecode definitions are included in `reference/`. Supply the ICD-10-to-phecode mapping file described in [reference/README.md](reference/README.md) before running the R scripts. Participant data are not included.
 
 ## Quick start
-###Step 1 Create semantic vectors for EHR features
-```bash
-cd functions
 
-python semantic_embed_biobert.py \
+Run the following commands from the repository root.
+
+### Step 1. Create semantic vectors for EHR features
+
+```bash
+python functions/semantic_embed_biobert.py \
   --in_csv /path/to/semantic.csv \
-  --text_col description \
-  --model dmis-lab/biobert-v1.1 \
+  --text_col text \
+  --model dmis-lab/biobert-base-cased-v1.1 \
   --batch_size 32 \
   --out_sem /path/to/sem_emb.npy
 ```
-**Output**
-1. `sem_emb.npy` with shape `[d_ehr, hidden_dim]`
 
-###Step 2 Fit the fusion model with K fold split
+**Output:** `sem_emb.npy` with shape `[d_ehr, 768]`, and `sem_emb.json` with model settings.
+
+### Step 2. Fit PEAR with K-fold cross-validation
+
 ```bash
-cd functions
-
-python train.py \
+python functions/train.py \
   --prs /path/to/X_prs.npy \
   --ehr /path/to/X_ehr.npy \
   --y /path/to/y.npy \
@@ -99,30 +90,23 @@ python train.py \
   --semantic /path/to/semantic.csv \
   --sem /path/to/sem_emb.npy \
   --EID /path/to/EID.txt \
-  --out_dir ./outputs \
+  --out_dir outputs/pear \
   --epochs 100 \
-  --batch_size 1024 \
+  --batch_size 4096 \
   --kfolds 5 \
-  --d_latent 128 \
-  --d_shared 32 \
-  --d_dist 32 \
-  --dropout 0.1
+  --seed 1
 ```
-**Output**
 
-1. `ehr_feature_semantic.csv`  
-   A filtered copy of your `semantic.csv` that matches the EHR feature filter inside `train.py`
-2. `fold1_model.pt` to `foldK_model.pt`  
-   Best model parameters for each fold
-3. `fold1_mask.npy` to `foldK_mask.npy`  
-   EHR feature gate values for each fold
-4. `weighted_mask.npy`  
-   Weighted average of fold masks with fold ROC AUC weights
-5. `oof_true.npy` and `oof_prob.npy`  
-   Out of fold labels and probabilities for all samples
-6. `oof_pred.csv`  
-   A table with `EID`, `y_true`, `y_prob`
+Omit `--covariates` if unavailable. Each fold selects its best model by inner validation ROC-AUC and evaluates it on the outer test fold.
+
+**Outputs**
+
+1. `ehr_feature_semantic.csv`: feature table in the original EHR column order.
+2. `fold1_model.pt` to `foldK_model.pt`: selected models and preprocessing state.
+3. `fold*_features.csv` and `feature_summary.csv`: EHR feature gates for each fold and their mean across eligible folds.
+4. `oof_pred.csv`: out-of-fold predictions with `EID`, `y_true`, `fold`, and `y_prob`.
+5. `metrics.json`: pooled and per-fold ROC-AUC and PR-AUC (average precision).
 
 ## Contact
 
-For questions, open an issue on GitHub or [email](yinghao.fu@my.cityu.edu.hk), or visit my [personal homepage](https://eddiefua.github.io/).
+For questions, open an [issue](https://github.com/EddieFua/PEAR/issues), send an [email](mailto:yinghao.fu@my.cityu.edu.hk), or visit my [personal homepage](https://eddiefua.github.io/).

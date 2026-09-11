@@ -1,39 +1,37 @@
+"""Load aligned PRS, EHR, labels, and feature descriptions."""
+
+from pathlib import Path
+
 import numpy as np
-import torch
-from torch.utils.data import Dataset
+import pandas as pd
 
-class ArrayDataset(Dataset):
-    def __init__(self, X_prs, X_ehr, y, covariates):
-        assert len(X_prs) == len(X_ehr) == len(y)
-        self.X_prs = torch.from_numpy(X_prs).float()
-        self.X_ehr = torch.from_numpy(X_ehr).float()
-        self.y = torch.from_numpy(y).float()
-        self.covariates = torch.from_numpy(covariates).float() if covariates is not None else None
 
-    def __len__(self):
-        return len(self.y)
+def load_array(path):
+    path = Path(path)
+    if path.suffix == ".npz":
+        with np.load(path, allow_pickle=False) as archive:
+            return archive["arr_0"]
+    return np.load(path, mmap_mode="r", allow_pickle=False)
 
-    def __getitem__(self, i):
-        return self.X_prs[i], self.X_ehr[i], self.y[i], self.covariates[i] if self.covariates is not None else None
 
 def load_arrays(prs_path, ehr_path, y_path, covariates_path=None):
-    def load_any(p):
-        kwargs = {}
-        if not p.endswith(".npz"):
-            kwargs['mmap_mode'] = 'r'
-        arr = np.load(p, **kwargs)
-        if isinstance(arr, np.lib.npyio.NpzFile):  # .npz
-            return arr["arr_0"]
-        return arr
+    prs, ehr, y = [load_array(p) for p in (prs_path, ehr_path, y_path)]
+    cov = load_array(covariates_path) if covariates_path else None
+    return prs, ehr, y.reshape(-1), cov
 
-    X_prs = load_any(prs_path)
-    X_ehr = load_any(ehr_path)
-    X_covariates = load_any(covariates_path) if covariates_path is not None else None
-    y = load_any(y_path).reshape(-1)
-    return X_prs, X_ehr, y, X_covariates
 
-def load_semantic_embeddings(path):
-    arr = np.load(path, mmap_mode='r')
-    if isinstance(arr, np.lib.npyio.NpzFile):
-        arr = arr["arr_0"]
-    return arr
+def load_features(path, n):
+    return (
+        pd.read_csv(path, dtype=str, keep_default_na=False)
+        if path
+        else pd.DataFrame({"feature": [str(i) for i in range(n)]})
+    )
+
+
+def load_ids(path):
+    ids = (
+        np.load(path, allow_pickle=False)
+        if Path(path).suffix == ".npy"
+        else np.loadtxt(path, dtype=str, ndmin=1, comments=None)
+    )
+    return ids.reshape(-1).astype(str)

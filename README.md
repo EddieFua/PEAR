@@ -105,7 +105,7 @@ Omit `--covariates` if unavailable. Each fold selects its best model by inner va
 2. `fold1_model.pt` to `foldK_model.pt`: selected models and preprocessing state.
 3. `fold*_features.csv` and `feature_summary.csv`: EHR feature gates for each fold and their mean across eligible folds.
 4. `oof_pred.csv`: out-of-fold predictions with `EID`, `y_true`, `fold`, and `y_prob`.
-5. `metrics.json`: pooled and per-fold ROC-AUC and PR-AUC (average precision).
+5. `metrics.json`: pooled and per-fold ROC-AUC and PR-AUC.
 
 ## Contact
 

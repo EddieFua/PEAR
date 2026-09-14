@@ -50,7 +50,7 @@ Keep all sample-level arrays and IDs in the same order. Save numeric arrays as `
 ### Required files
 
 1. PRS matrix `X_prs`: shape `[N, d_prs]`, before scaling.
-2. Binary EHR matrix `X_ehr`: shape `[N, d_ehr]`, with the target disease and its exclusion-range features removed.
+2. EHR matrix `X_ehr`: shape `[N, d_ehr]`, with the target disease and its exclusion-range features removed.
 3. Label vector `y`: shape `[N]` or `[N, 1]`, with values `0` or `1`.
 4. Sample IDs `EID`: `N` unique IDs, as a text file with one ID per line and no header, or a `.npy` file.
 5. Semantic vectors `S_sem`: shape `[d_ehr, d_sem]`, with nonzero rows in EHR feature order.

@@ -1,5 +1,3 @@
-"""PEAR shared-distinct architecture from Supplementary Table 10."""
-
 from itertools import pairwise
 
 import torch

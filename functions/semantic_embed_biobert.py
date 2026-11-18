@@ -1,5 +1,3 @@
-"""Mean-pooled BioBERT embeddings with row-order and model provenance."""
-
 import argparse
 from pathlib import Path
 

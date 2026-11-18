@@ -1,5 +1,3 @@
-"""Reproducibility, metrics, and strict JSON output."""
-
 import hashlib
 import json
 import os

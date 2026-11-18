@@ -1,5 +1,3 @@
-"""Apply one saved PEAR fold to new samples with training-time preprocessing."""
-
 import argparse
 from pathlib import Path
 

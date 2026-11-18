@@ -1,5 +1,3 @@
-"""Fit PRS scaling and EHR prevalence filtering on the training partition."""
-
 import numpy as np
 import torch
 from sklearn.preprocessing import MinMaxScaler

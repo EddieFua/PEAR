@@ -1,5 +1,3 @@
-"""Train PEAR with inner validation and stratified outer cross-validation."""
-
 import argparse
 import gc
 from pathlib import Path
